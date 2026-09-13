@@ -654,11 +654,13 @@ function classifyCluster(c) {
   const density = c.size / (w * h || 1);
   
   if (c.holeCount > 0) return 'Loop';
-  if (c.size < 600 && aspect > 0.3 && aspect < 3.0 && density > 0.25) return 'Dot';
+  if (c.size < 600 && aspect > 0.2 && aspect < 5.0 && density > 0.25) return 'Dot';
   
-  if (c.elongation > 5.0 && density < 0.4) return 'Drawn Line';
-  if (aspect > 2.0 && c.size > 300 && density > 0.05 && density < 0.4) return 'Signature';
-  if (aspect > 0.2 && aspect < 3.0 && density > 0.02 && density < 0.6) return 'Alphabet / Letter';
+  if (c.elongation > 6.0 && density < 0.3) return 'Drawn Line';
+  if (c.size > 200 && density > 0.65) return 'Chaotic Scribble';
+  if (c.size > 800 && aspect > 1.5 && density < 0.35) return 'Signature';
+  
+  if (density > 0.02 && density < 0.65 && c.size > 10) return 'Alphabet / Letter';
   return 'Chaotic Scribble';
 }
 
