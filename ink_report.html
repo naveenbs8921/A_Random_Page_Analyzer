@@ -660,10 +660,6 @@ function classifyCluster(c) {
       return 'Loop';
   }
   
-  if (maxDim < imgMaxDim * 0.04 && density > 0.35 && aspect > 0.15 && aspect < 6.0) {
-      return 'Dot';
-  }
-  
   if (c.elongation > 8.0 && maxDim > imgMaxDim * 0.05) {
       return 'Drawn Line';
   }
@@ -1023,7 +1019,6 @@ function buildPanels(ink, inkCount, clusters, densityData, lineClusters, colorDa
           <div class="stat-card"><div class="v">${sigCount}</div><div class="k">signatures detected</div></div>
           <div class="stat-card"><div class="v">${letterCount}</div><div class="k">letter elements detected</div></div>
           <div class="stat-card"><div class="v">${loopCount}</div><div class="k">loops detected</div></div>
-          <div class="stat-card"><div class="v">${dotCount}</div><div class="k">dots identified</div></div>
           <div class="stat-card"><div class="v">${inkMetre.m.toFixed(2)} m</div><div class="k">total ink path length</div></div>
           <div class="stat-card"><div class="v">${colorData ? colorData.pigmentType : 'Dark Ink'}</div><div class="k">detected ink pigment</div></div>
           <div class="stat-card"><div class="v">${domQuad}</div><div class="k">highest density quadrant</div></div>
@@ -1095,22 +1090,21 @@ function buildPanels(ink, inkCount, clusters, densityData, lineClusters, colorDa
       }
     },
     {
-      icon:'?', title:'DOT & CLOSED LOOP FINDER', desc:'Topological analysis of specific characters',
+      icon:'?', title:'CLOSED LOOP FINDER', desc:'Topological analysis of specific characters',
       render: (el)=>{
         el.innerHTML = `
-        <div class="panel-header"><div class="panel-icon">?</div><div><div class="panel-title">DOT & CLOSED LOOP FINDER</div><div class="panel-desc">Topological analysis of specific characters</div></div></div>
+        <div class="panel-header"><div class="panel-icon">?</div><div><div class="panel-title">CLOSED LOOP FINDER</div><div class="panel-desc">Topological analysis of specific characters</div></div></div>
         <div class="headline-stat">
-          <div class="big" style="color:#9b59b6">${loopCount + dotCount}</div>
+          <div class="big" style="color:#9b59b6">${loopCount}</div>
           <div class="label">total topological features detected</div>
         </div>
         <div class="stat-grid">
           <div class="stat-card"><div class="v">${loopCount}</div><div class="k">closed loops (e.g. a, d, o, p, q)</div></div>
-          <div class="stat-card"><div class="v">${dotCount}</div><div class="k">dots / isolated ink marks</div></div>
-        </div>
+          </div>
         <div class="split" style="margin-top:20px;">
           <div><canvas class="viz" id="canvas-topology"></canvas></div>
           <div>
-            <p class="note">?? <strong>Topological Map:</strong> Highlighting fully enclosed circular strokes (purple) and isolated, dense ink points (green) across the page.</p>
+            <p class="note">?? <strong>Topological Map:</strong> Highlighting fully enclosed circular strokes (purple) across the page.</p>
           </div>
         </div>`;
         requestAnimationFrame(()=>{
@@ -1127,11 +1121,6 @@ function buildPanels(ink, inkCount, clusters, densityData, lineClusters, colorDa
             if (c.type === 'Loop') {
               ctx.strokeStyle='#9b59b6'; ctx.lineWidth=3;
               ctx.strokeRect(c.minX-4, c.minY-4, c.maxX-c.minX+8, c.maxY-c.minY+8);
-            } else if (c.type === 'Dot') {
-              ctx.strokeStyle='#3D7F5C'; ctx.lineWidth=3;
-              ctx.beginPath();
-              ctx.arc(c.cx, c.cy, Math.max(c.maxX-c.minX, c.maxY-c.minY)/2 + 4, 0, 2*Math.PI);
-              ctx.stroke();
             }
           });
         });
@@ -1179,7 +1168,6 @@ function buildPanels(ink, inkCount, clusters, densityData, lineClusters, colorDa
             if(c.type === 'Signature') col='#C6402F';
             else if(c.type === 'Alphabet / Letter') col='#2C55E8';
             else if(c.type === 'Loop') col='#9b59b6';
-            else if(c.type === 'Dot') col='#3D7F5C';
             else if(c.type === 'Drawn Line') col='#C98A1E';
             ctx.strokeStyle=col; ctx.lineWidth=2;
             ctx.strokeRect(c.minX,c.minY,c.maxX-c.minX,c.maxY-c.minY);
@@ -1343,7 +1331,7 @@ function showResults(inkCount, clusters, densityData, lineClusters){
   
   const criticLines = [
     (l, d) => `Way too many chaotic scribbles. Do you even know how to hold a pen?`,
-    (l, d) => `I found ${l} loops and ${d} dots. This handwriting is utterly unreadable.`,
+    (l, d) => `I found ${l} unreadable loops. This handwriting is utterly unreadable.`,
     (l, d) => `Are you a doctor? Because this looks like a medical prescription.`,
     (l, d) => `Absolutely zero spatial awareness. Disgusting.`
   ];
