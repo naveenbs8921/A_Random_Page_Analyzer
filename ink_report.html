@@ -648,22 +648,18 @@ function otsuThreshold(gray){
 }
 
 function classifyCluster(c) {
-    const w = c.maxX - c.minX;
-    const h = c.maxY - c.minY;
-    const aspect = w / (h || 1);
-    const density = c.size / (w * h || 1);
-    
-    // Drawn lines are highly elongated
-    if (c.elongation > 5.0 && density < 0.4) return 'Drawn Line';
-    
-    // Signatures are usually wide
-    if (aspect > 2.0 && c.size > 300 && density > 0.05 && density < 0.4) return 'Signature';
-    
-    // Alphabets/letters have somewhat balanced aspect ratios.
-    // In live drawing mode, they can be huge (pixel-wise), so we rely on density and aspect ratio rather than raw size.
-    if (aspect > 0.2 && aspect < 3.0 && density > 0.02 && density < 0.6) return 'Alphabet / Letter';
-    
-    return 'Chaotic Scribble';
+  const w = c.maxX - c.minX;
+  const h = c.maxY - c.minY;
+  const aspect = w / (h || 1);
+  const density = c.size / (w * h || 1);
+  
+  if (c.holeCount > 0) return 'Loop';
+  if (c.size < 600 && aspect > 0.3 && aspect < 3.0 && density > 0.25) return 'Dot';
+  
+  if (c.elongation > 5.0 && density < 0.4) return 'Drawn Line';
+  if (aspect > 2.0 && c.size > 300 && density > 0.05 && density < 0.4) return 'Signature';
+  if (aspect > 0.2 && aspect < 3.0 && density > 0.02 && density < 0.6) return 'Alphabet / Letter';
+  return 'Chaotic Scribble';
 }
 
 function runFullAnalysis(threshold){
@@ -753,35 +749,99 @@ function analyzeInkColor(ink){
 }
 
 function findClusters(ink){
-  const labels=new Int32Array(W*H).fill(-1);
-  const clusters=[];
-  const stack=new Int32Array(W*H);
-  for(let start=0;start<ink.length;start++){
-    if(ink[start]!==1||labels[start]!==-1) continue;
-    let sp=0; stack[sp++]=start; labels[start]=clusters.length;
-    let minX=W,maxX=0,minY=H,maxY=0,count=0,sumX=0,sumY=0;
-    let sumXX=0,sumYY=0,sumXY=0;
-    while(sp>0){
-      const p=stack[--sp], x=p%W, y=(p/W)|0;
-      count++; sumX+=x; sumY+=y; sumXX+=x*x; sumYY+=y*y; sumXY+=x*y;
-      if(x<minX)minX=x; if(x>maxX)maxX=x;
-      if(y<minY)minY=y; if(y>maxY)maxY=y;
-      if(x>0){const q=p-1;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
-      if(x<W-1){const q=p+1;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
-      if(y>0){const q=p-W;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
-      if(y<H-1){const q=p+W;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
+    const labels = new Int32Array(W*H).fill(-1);
+    const clusters = [];
+    const stack = new Int32Array(W*H);
+    for(let start=0;start<ink.length;start++){
+      if(ink[start]!==1||labels[start]!==-1) continue;
+      let sp=0; stack[sp++]=start; labels[start]=clusters.length;
+      let minX=W,maxX=0,minY=H,maxY=0,count=0,sumX=0,sumY=0;
+      let sumXX=0,sumYY=0,sumXY=0;
+      while(sp>0){
+        const p=stack[--sp], x=p%W, y=(p/W)|0;
+        count++; sumX+=x; sumY+=y; sumXX+=x*x; sumYY+=y*y; sumXY+=x*y;
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+        if(x>0){const q=p-1;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
+        if(x<W-1){const q=p+1;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
+        if(y>0){const q=p-W;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
+        if(y<H-1){const q=p+W;if(ink[q]===1&&labels[q]===-1){labels[q]=clusters.length;stack[sp++]=q;}}
+      }
+      if(count>=2){
+        const cx=sumX/count, cy=sumY/count;
+        const vX=sumXX/count-cx*cx, vY=sumYY/count-cy*cy, cXY=sumXY/count-cx*cy;
+        const {elongation,direction}=pcaElongation(vX,vY,cXY);
+        const c = {size:count,minX,maxX,minY,maxY,cx,cy,elongation,direction,vX,vY,cXY, holeCount:0};
+        clusters.push(c);
+      } else { clusters.push(null); }
     }
-    if(count>=6){
-      const cx=sumX/count, cy=sumY/count;
-      const vX=sumXX/count-cx*cx, vY=sumYY/count-cy*cy, cXY=sumXY/count-cx*cy;
-      const {elongation,direction}=pcaElongation(vX,vY,cXY);
-      const c = {size:count,minX,maxX,minY,maxY,cx,cy,elongation,direction,vX,vY,cXY};
-      c.type = classifyCluster(c);
-      clusters.push(c);
-    } else { clusters.push(null); }
+    
+    const paper = new Uint8Array(W * H);
+    for (let i = 0; i < ink.length; i++) { if (ink[i] === 1) paper[i] = 2; }
+    
+    let q = [];
+    for (let x=0; x<W; x++) {
+      if (paper[x] === 0) { paper[x] = 1; q.push(x); }
+      if (paper[(H-1)*W + x] === 0) { paper[(H-1)*W + x] = 1; q.push((H-1)*W + x); }
+    }
+    for (let y=0; y<H; y++) {
+      if (paper[y*W] === 0) { paper[y*W] = 1; q.push(y*W); }
+      if (paper[y*W + W - 1] === 0) { paper[y*W + W - 1] = 1; q.push(y*W + W - 1); }
+    }
+    
+    let head = 0;
+    while(head < q.length) {
+      const p = q[head++];
+      const x = p % W, y = (p / W) | 0;
+      if (x > 0 && paper[p-1] === 0) { paper[p-1] = 1; q.push(p-1); }
+      if (x < W-1 && paper[p+1] === 0) { paper[p+1] = 1; q.push(p+1); }
+      if (y > 0 && paper[p-W] === 0) { paper[p-W] = 1; q.push(p-W); }
+      if (y < H-1 && paper[p+W] === 0) { paper[p+W] = 1; q.push(p+W); }
+    }
+    
+    const holeLabels = new Int32Array(W*H).fill(-1);
+    for (let start = 0; start < paper.length; start++) {
+      if (paper[start] === 0 && holeLabels[start] === -1) {
+        let sp = 0; stack[sp++] = start; holeLabels[start] = 1;
+        let foundClusterId = -1;
+        let holeSize = 0;
+        
+        while(sp > 0) {
+          const p = stack[--sp];
+          holeSize++;
+          const x = p % W, y = (p / W) | 0;
+          
+          if (foundClusterId === -1) {
+            const neighbors = [p-1, p+1, p-W, p+W, p-W-1, p-W+1, p+W-1, p+W+1];
+            for (let i=0; i<neighbors.length; i++) {
+              const n = neighbors[i];
+              if (n >= 0 && n < W*H && paper[n] === 2 && labels[n] !== -1) {
+                foundClusterId = labels[n];
+                break;
+              }
+            }
+          }
+          
+          if (x > 0 && paper[p-1] === 0 && holeLabels[p-1] === -1) { holeLabels[p-1] = 1; stack[sp++] = p-1; }
+          if (x < W-1 && paper[p+1] === 0 && holeLabels[p+1] === -1) { holeLabels[p+1] = 1; stack[sp++] = p+1; }
+          if (y > 0 && paper[p-W] === 0 && holeLabels[p-W] === -1) { holeLabels[p-W] = 1; stack[sp++] = p-W; }
+          if (y < H-1 && paper[p+W] === 0 && holeLabels[p+W] === -1) { holeLabels[p+W] = 1; stack[sp++] = p+W; }
+        }
+        
+        if (foundClusterId !== -1 && clusters[foundClusterId] && holeSize > 5) {
+          clusters[foundClusterId].holeCount++;
+        }
+      }
+    }
+    
+    for (let i = 0; i < clusters.length; i++) {
+      if (clusters[i]) {
+        clusters[i].type = classifyCluster(clusters[i]);
+      }
+    }
+    
+    return clusters.filter(Boolean);
   }
-  return clusters.filter(Boolean);
-}
 
 function pcaElongation(vX,vY,cXY){
   const tr=vX+vY, det=vX*vY-cXY*cXY;
