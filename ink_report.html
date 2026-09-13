@@ -652,16 +652,35 @@ function classifyCluster(c) {
   const h = c.maxY - c.minY;
   const aspect = w / (h || 1);
   const density = c.size / (w * h || 1);
+  const maxDim = Math.max(w, h);
+  const imgMaxDim = Math.max(W, H);
   
-  if (c.holeCount > 0) return 'Loop';
-  if (c.size < 600 && aspect > 0.2 && aspect < 5.0 && density > 0.25) return 'Dot';
+  if (c.holeCount > 0) {
+      if (maxDim > imgMaxDim * 0.4) return 'Unknown Doodle';
+      return 'Loop';
+  }
   
-  if (c.elongation > 6.0 && density < 0.3) return 'Drawn Line';
-  if (c.size > 200 && density > 0.65) return 'Chaotic Scribble';
-  if (c.size > 800 && aspect > 1.5 && density < 0.35) return 'Signature';
+  if (maxDim < imgMaxDim * 0.04 && density > 0.35 && aspect > 0.15 && aspect < 6.0) {
+      return 'Dot';
+  }
   
-  if (density > 0.02 && density < 0.65 && c.size > 10) return 'Alphabet / Letter';
-  return 'Chaotic Scribble';
+  if (c.elongation > 8.0 && maxDim > imgMaxDim * 0.05) {
+      return 'Drawn Line';
+  }
+  
+  if (density > 0.55 && w > imgMaxDim * 0.03 && h > imgMaxDim * 0.03) {
+      return 'Chaotic Scribble';
+  }
+  
+  if (maxDim > imgMaxDim * 0.25 && density < 0.25) {
+      return 'Signature';
+  }
+  
+  if (c.size > 5) {
+      return 'Alphabet / Letter';
+  }
+  
+  return 'Unknown Doodle';
 }
 
 function runFullAnalysis(threshold){
