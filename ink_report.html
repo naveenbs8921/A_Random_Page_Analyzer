@@ -245,6 +245,15 @@ footer{
   padding:24px;border-top:2px dashed var(--paper-line);margin-top:40px;
   background:rgba(255,255,255,0.5);
 }
+
+#critic-wrap{position:fixed;bottom:20px;right:20px;display:flex;align-items:flex-end;gap:12px;z-index:99;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+#critic-wrap.active{opacity:1;pointer-events:auto;}
+#critic-dialog{background:var(--paper);border:3px solid var(--ink);padding:14px;border-radius:12px 12px 0 12px;box-shadow:-4px 4px 0 var(--ink);max-width:250px;position:relative;}
+#critic-dialog::after{content:'';position:absolute;bottom:-3px;right:-15px;border-width:15px 0 0 15px;border-style:solid;border-color:var(--ink) transparent transparent transparent;}
+#critic-title{font-family:var(--mono);font-size:11px;font-weight:bold;color:#C6402F;margin-bottom:6px;text-transform:uppercase;}
+#critic-text{font-size:14px;line-height:1.4;}
+#critic-mascot{font-size:48px;filter:drop-shadow(-4px 4px 0 var(--ink));}
+
 </style>
 </head>
 <body>
@@ -308,6 +317,15 @@ footer{
 </div>
 
 <!-- ── MASCOT ── -->
+
+<div id="critic-wrap">
+  <div id="critic-dialog">
+    <div id="critic-title">Harsh Critic</div>
+    <div id="critic-text">Why are you even analyzing this?</div>
+  </div>
+  <div id="critic-mascot">??</div>
+</div>
+
 <div class="mascot-wrap" id="mascot-wrap">
   <!-- Scribble Man SVG -->
   <svg class="mascot-svg" viewBox="0 0 80 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -723,8 +741,8 @@ function analyzeInkColor(ink){
   const hex = "#" + ((1 << 24) + (meanR << 16) + (meanG << 8) + meanB).toString(16).slice(1).toUpperCase();
 
   let pigmentType = "Standard Dark Ink";
-  if (meanV < 28 && meanS < 20) pigmentType = "Carbon Black / India Ink";
-  else if (meanV < 45 && meanS < 25) pigmentType = "Graphite Pencil (HB/2B Lead)";
+  if (meanV < 28 && meanS < 20) pigmentType = "Deep Black Gel Pen";
+  else if (meanV < 45 && meanS < 25) pigmentType = "Standard Black Ballpoint Pen";
   else if (meanH >= 180 && meanH <= 260 && meanS > 20) pigmentType = "Royal Blue Ballpoint Pigment";
   else if (meanH >= 180 && meanH <= 260 && meanV > 55) pigmentType = "Cyan / Gel Blue Ink";
   else if ((meanH < 20 || meanH > 340) && meanS > 25) pigmentType = "Crimson Red Marking Pigment";
@@ -1198,6 +1216,18 @@ function showResults(inkCount, clusters, densityData, lineClusters){
   const totalStrokes = clusters.reduce((sum, c) => sum + estimateStrokes(c), 0);
   const fn = mascotLines[Math.floor(Math.random()*mascotLines.length)];
   document.getElementById('mascot-text').textContent = fn(clusters.length, totalStrokes, metre);
+  
+  const criticLines = [
+    (l, d) => `Way too many chaotic scribbles. Do you even know how to hold a pen?`,
+    (l, d) => `I found ${l} loops and ${d} dots. This handwriting is utterly unreadable.`,
+    (l, d) => `Are you a doctor? Because this looks like a medical prescription.`,
+    (l, d) => `Absolutely zero spatial awareness. Disgusting.`
+  ];
+  const cFn = criticLines[Math.floor(Math.random()*criticLines.length)];
+  const loopCount = clusters.filter(c=>c.type==='Loop').length;
+  const dotCount = clusters.filter(c=>c.type==='Dot').length;
+  document.getElementById('critic-text').textContent = cFn(loopCount, dotCount);
+  document.getElementById('critic-wrap').classList.add('active');
 
   buildDots();
   renderPanel(0);
