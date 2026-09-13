@@ -1013,6 +1013,49 @@ function buildPanels(ink, inkCount, clusters, densityData, lineClusters, colorDa
         });
       }
     },
+    {
+      icon:'?', title:'DOT & CLOSED LOOP FINDER', desc:'Topological analysis of specific characters',
+      render: (el)=>{
+        el.innerHTML = `
+        <div class="panel-header"><div class="panel-icon">?</div><div><div class="panel-title">DOT & CLOSED LOOP FINDER</div><div class="panel-desc">Topological analysis of specific characters</div></div></div>
+        <div class="headline-stat">
+          <div class="big" style="color:#9b59b6">${loopCount + dotCount}</div>
+          <div class="label">total topological features detected</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="v">${loopCount}</div><div class="k">closed loops (e.g. a, d, o, p, q)</div></div>
+          <div class="stat-card"><div class="v">${dotCount}</div><div class="k">dots / isolated ink marks</div></div>
+        </div>
+        <div class="split" style="margin-top:20px;">
+          <div><canvas class="viz" id="canvas-topology"></canvas></div>
+          <div>
+            <p class="note">?? <strong>Topological Map:</strong> Highlighting fully enclosed circular strokes (purple) and isolated, dense ink points (green) across the page.</p>
+          </div>
+        </div>`;
+        requestAnimationFrame(()=>{
+          const cv=document.getElementById('canvas-topology');
+          if(!cv) return;
+          cv.width=W; cv.height=H;
+          const ctx=cv.getContext('2d');
+          ctx.drawImage(sourceCanvas,0,0);
+          
+          ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+          ctx.fillRect(0, 0, W, H);
+          
+          clusters.forEach(c=>{
+            if (c.type === 'Loop') {
+              ctx.strokeStyle='#9b59b6'; ctx.lineWidth=3;
+              ctx.strokeRect(c.minX-4, c.minY-4, c.maxX-c.minX+8, c.maxY-c.minY+8);
+            } else if (c.type === 'Dot') {
+              ctx.strokeStyle='#3D7F5C'; ctx.lineWidth=3;
+              ctx.beginPath();
+              ctx.arc(c.cx, c.cy, Math.max(c.maxX-c.minX, c.maxY-c.minY)/2 + 4, 0, 2*Math.PI);
+              ctx.stroke();
+            }
+          });
+        });
+      }
+    },
     
     {
       icon:'📦', title:'CLUSTER BREAKDOWN', desc:'Shape analysis & stroke line categorization',
