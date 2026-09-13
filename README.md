@@ -1,6 +1,6 @@
 # KUTHIVARA — The Useless Scribble Analyser
 
-> A fully client-side, zero-dependency Computer Vision web application that dissects any handwritten page into absurdly detailed forensic metrics — all running entirely inside your browser.
+> A Computer Vision web application that dissects any handwritten page into absurdly detailed forensic metrics -- powered by a **JavaScript** client-side analyzer and a **Python** (OpenCV + Streamlit) backend — all running entirely inside your browser.
 
 ---
 
@@ -151,13 +151,34 @@ For each elongated cluster:
 
 | Layer | Technology |
 |---|---|
-| **Language** | Vanilla JavaScript (ES6+) |
-| **Rendering** | HTML5 Canvas 2D API |
+| **Frontend** | Vanilla JavaScript (ES6+), HTML5 Canvas 2D API |
+| **Backend** | Python 3 (Streamlit web app + CLI) |
+| **CV Libraries** | OpenCV (cv2), NumPy, SciPy (ndimage) |
 | **Styling** | Raw CSS (brutalist design, CSS variables, animations) |
-| **Image Processing** | Manual pixel manipulation via `ImageData` arrays |
+| **Image Processing** | Canvas ImageData pixel manipulation (JS) + OpenCV thresholding (Python) |
 | **Math** | Hand-rolled PCA, integral images, flood fill, CIELAB transforms |
-| **Dependencies** | **Zero.** No libraries. No frameworks. No npm. |
-| **Backend** | **None.** Everything runs in the browser. |
+| **Frameworks** | Streamlit (Python dashboard) |
+
+### Two Interfaces
+
+The project ships with **two separate analysis interfaces**:
+
+1. **ink_report.html** - A fully client-side, zero-dependency HTML/JS analyzer that runs entirely in the browser. This is the main interactive report with 8 panels, mascots, and the critic.
+
+2. **app.py + main.py** - A Python-based analyzer powered by **Streamlit**, **OpenCV**, **NumPy**, and **SciPy**. This backend provides:
+   - **Doodle Index** - Measures scribble density to estimate boredom/neurosis levels
+   - **Signature Shake Detector** - Compares two signatures to measure hand stability
+   - **Drawing Tremor Monitor** - Analyzes straight lines for hand tremor detection
+   - **Doodle Pattern Analyzer** - Generates spatial heat maps of doodle distribution
+   - **Auto Mode** - Automatically detects content type and runs all applicable analyses
+
+   Run it with:
+   `ash
+   python -m streamlit run app.py
+   python main.py --mode auto samples/your_image.jpg
+   `
+
+   **Python Dependencies:** opencv-python, numpy, scipy, streamlit, Pillow
 
 ---
 
