@@ -979,9 +979,9 @@ function buildPanels(ink, inkCount, clusters, densityData, lineClusters, colorDa
           <div class="stat-card"><div class="v">${feet} ft</div><div class="k">length in feet</div></div>
           <div class="stat-card"><div class="v">${totalStrokes}</div><div class="k">total stroke lines</div></div>
           <div class="stat-card"><div class="v">${(inkMetre.mm / (totalStrokes || 1)).toFixed(1)} mm</div><div class="k">average stroke length</div></div>
-          <div class="stat-card fake-stat"><div class="v">${(inkMetre.m * 1000 / 0.05).toFixed(0)}</div><div class="k">ants aligned head-to-tail</div></div>
-          <div class="stat-card fake-stat amber-fake"><div class="v">${(inkMetre.m / 0.15).toFixed(1)}</div><div class="k">spaghetti strands</div></div>
-          <div class="stat-card fake-stat blue-fake"><div class="v">${(inkMetre.m / 2.5).toFixed(2)}</div><div class="k">times across a notebook</div></div>
+          <div class="stat-card fake-stat"><div class="v">${(inkMetre.m * 1000 / 5).toFixed(0)}</div><div class="k">ants aligned head-to-tail</div></div>
+          <div class="stat-card fake-stat amber-fake"><div class="v">${(inkMetre.m / 0.25).toFixed(1)}</div><div class="k">spaghetti strands</div></div>
+          <div class="stat-card fake-stat blue-fake"><div class="v">${(inkMetre.m / 0.21).toFixed(1)}</div><div class="k">times across a notebook</div></div>
         </div>
         <div class="note" style="margin-top:16px">
           📐 <strong>Methodology:</strong> Calculated using scan DPI resolution and standard pen nib width (0.5mm). Dividing total ink area by pen width yields exact stroke trajectory length.
